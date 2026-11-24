@@ -133,7 +133,7 @@ public class Player {
         statusOverride = null;
 
         cardd1.setIcon(Images.cardBackSmall());
-        cardd1.setIcon(Images.cardBackSmall());
+        cardd2.setIcon(Images.cardBackSmall());
         setFoldedLabel();
         setTotalLabel();
 
@@ -182,7 +182,7 @@ public class Player {
             return;
         }
         cardd1.setIcon(Images.cardSmall(hand[0]));
-        cardd1.setIcon(Images.cardSmall(hand[1]));
+        cardd2.setIcon(Images.cardSmall(hand[1]));
         up.revalidate();
         up.repaint();
     }

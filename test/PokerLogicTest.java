@@ -14,6 +14,7 @@ public class PokerLogicTest {
     private static int failed = 0;
 
     public static void main(String[] args) {
+        deckIntegrity();
         handCategories();
         handComparisons();
         bruteForceComparison();
@@ -23,6 +24,22 @@ public class PokerLogicTest {
         System.out.println();
         System.out.println(passed + " passed, " + failed + " failed");
         if (failed > 0) System.exit(1);
+    }
+
+
+    // ---------------------------------------------------------------
+    // deck integrity
+    // ---------------------------------------------------------------
+
+    private static void deckIntegrity() {
+        Deck deck = new Deck();
+        Set<String> dealt = new HashSet<>();
+        for (int i = 0; i < 52; i++) {
+            String card = deck.dealCard();
+            if (card != null) dealt.add(card);
+        }
+        check("a fresh deck contains 52 unique cards", dealt.size() == 52);
+        check("a full deck is exhausted after 52 deals", deck.size() == 0 && deck.dealCard() == null);
     }
 
     // ---------------------------------------------------------------

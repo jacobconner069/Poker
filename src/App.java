@@ -52,6 +52,7 @@ public class App {
     private int first = 0;
     private int street = 0;
     private int raisesThisStreet = 0;
+    private int lastFullRaiseSize = MIN_RAISE;
     private boolean[] acted = new boolean[0];
     private boolean handStarted = false;
     private boolean handOver = false;
@@ -114,6 +115,7 @@ public class App {
         first = 0;
         street = 0;
         raisesThisStreet = 0;
+        lastFullRaiseSize = MIN_RAISE;
         acted = new boolean[numPlayers];
         handStarted = false;
         handOver = false;
@@ -122,6 +124,10 @@ public class App {
 
     //creates the display for the game
     private void setupPanel2(JPanel panel2){
+        // Rebuild the table when the user starts another tournament. Without
+        // clearing this panel, old controls and listeners accumulate.
+        panel2.removeAll();
+        panel2.setLayout(new BorderLayout());
 
         //top
         panel2.setLayout(new BorderLayout());
@@ -305,6 +311,7 @@ public class App {
         potAmount = 0;
         street = 0;
         raisesThisStreet = 0;
+        lastFullRaiseSize = MIN_RAISE;
         acted = new boolean[numPlayers];
         handStarted = true;
         handOver = false;
@@ -364,6 +371,7 @@ public class App {
         acted = new boolean[numPlayers];
         board.setCurrentBet(0);
         raisesThisStreet = 0;
+        lastFullRaiseSize = MIN_RAISE;
         turn = prevSeat(first);
     }
 
@@ -468,15 +476,21 @@ public class App {
         acted[seat] = true;
 
         if(p.getBet() > oldBet){
+            int raiseSize = p.getBet() - oldBet;
             board.setCurrentBet(p.getBet());
-            raisesThisStreet++;
-            for(int i=0; i<numPlayers;i++){
-                if (i != seat){
-                    acted[i] = false;
+            boolean fullRaise = raiseSize >= lastFullRaiseSize;
+            if(fullRaise){
+                lastFullRaiseSize = raiseSize;
+                raisesThisStreet++;
+                for(int i=0; i<numPlayers;i++){
+                    if (i != seat){
+                        acted[i] = false;
+                    }
                 }
             }
-            say(who(seat) + " " + verb(seat, "raise") + " $" + (p.getBet() - oldBet) + 
-                (p.isAllIn() ? " (ALL IN)" : ""));
+            say(who(seat) + " " + verb(seat, "raise") + " $" + raiseSize +
+                (p.isAllIn() ? " (ALL IN)" : "") +
+                (fullRaise ? "" : " (short raise; action not reopened)"));
         }
         else{
             say(who(seat) + " " + verb(seat, "call") + " $" + paid + " (ALL IN)");
@@ -500,6 +514,14 @@ public class App {
         int room = p.getChips() - amountToCall(p);
         if(amount <=0){
             error.setText("Raise must be more than $0.");
+            return false;
+        }
+        if(acted[0]){
+            error.setText("A short all-in raise does not reopen raising for you.");
+            return false;
+        }
+        if(raisesThisStreet >= MAX_RAISES){
+            error.setText("The maximum of " + MAX_RAISES + " raises has been reached this round.");
             return false;
         }
         if(amount > room){
@@ -540,7 +562,7 @@ public class App {
             return;
         }
         boolean shouldRaise = false;
-        if(raisesThisStreet < MAX_RAISES){
+        if(raisesThisStreet < MAX_RAISES && !acted[seat]){
             double roll = Math.random();
             if(street==0){
                 shouldRaise = roll < preflopRaiseChance(p);
@@ -659,7 +681,7 @@ public class App {
     private void refreshDisplay(){
         Player human = playerList.get(0);
         pot.setText("Pot: $" + potAmount);
-        betNeeded.setText("Bet needed: $" + board.getCurrentBet());
+        betNeeded.setText("Your call: $" + amountToCall(human));
         setChips(chips);
         setPlayerChips(chipss);
         for(int i =1;i<playerList.size();i++){
@@ -683,7 +705,7 @@ public class App {
         int toCall = amountToCall(human);
         fold.setEnabled(humanTurn);
         call.setEnabled(humanTurn);
-        raise.setEnabled(humanTurn);
+        raise.setEnabled(humanTurn && !acted[0] && raisesThisStreet < MAX_RAISES);
         if(toCall == 0){
             call.setText("Check");
         }
